@@ -1,0 +1,78 @@
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  background: #050712;
+  color: #eaf7ff;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(255, 56, 209, 0.22), transparent 28%),
+    radial-gradient(circle at 85% 10%, rgba(32, 247, 255, 0.2), transparent 30%),
+    linear-gradient(135deg, #050712 0%, #0b1026 54%, #151a3d 100%);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  content: "";
+  background-image:
+    radial-gradient(circle, rgba(234, 247, 255, 0.75) 1px, transparent 1px),
+    radial-gradient(circle, rgba(32, 247, 255, 0.45) 1px, transparent 1px);
+  background-position:
+    0 0,
+    28px 42px;
+  background-size:
+    90px 90px,
+    140px 140px;
+  opacity: 0.18;
+}
+
+body::after {
+  position: fixed;
+  inset: auto -10% -30% -10%;
+  z-index: -1;
+  height: 50vh;
+  pointer-events: none;
+  content: "";
+  background: radial-gradient(ellipse, rgba(32, 247, 255, 0.16), transparent 62%);
+  filter: blur(28px);
+}
+
+@layer components {
+  .glass-panel {
+    @apply border border-white/10 bg-white/[0.07] bg-glass-shine shadow-glass backdrop-blur-2xl;
+  }
+
+  .neon-button {
+    @apply rounded-2xl border border-cyan/40 bg-cyan/15 px-5 py-3 font-semibold text-cyan shadow-neon transition duration-200 hover:-translate-y-0.5 hover:bg-cyan/25;
+  }
+
+  .magnetic-button {
+    @apply rounded-2xl border border-plasma/40 bg-plasma/15 px-5 py-3 font-semibold text-plasma shadow-magenta transition duration-200 hover:-translate-y-0.5 hover:bg-plasma/25;
+  }
+
+  .input-field {
+    @apply w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-starlight outline-none transition placeholder:text-comet/60 focus:border-cyan/60 focus:shadow-neon;
+  }
+
+  .page-shell {
+    @apply min-h-screen bg-nebula-radial text-starlight;
+  }
+}
