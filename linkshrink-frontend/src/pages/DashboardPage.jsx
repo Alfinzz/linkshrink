@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Link2, Copy, MousePointerClick, MapPin, Pencil, Trash2, BarChart3, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { Link2, Copy, MousePointerClick, MapPin, Trash2, BarChart3, ChevronLeft, ChevronRight, ChevronDown, Check, ExternalLink } from "lucide-react";
 import api, { getBackendOrigin } from "../lib/axios";
 import StatCard from "../components/StatCard.jsx";
+import Toast from "../components/Toast.jsx";
 
 export default function DashboardPage() {
   const [links, setLinks] = useState([]);
@@ -14,7 +15,9 @@ export default function DashboardPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [stats, setStats] = useState({ totalClicks: 0, activeLinks: 0, topLocation: "No traffic yet" });
   const [statsLoading, setStatsLoading] = useState(true);
-  const perPage = 3;
+  const [toast, setToast] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
+  const perPage = 5;
 
   // Get real user name from localStorage
   const storedUser = JSON.parse(localStorage.getItem("linkshrink_user") || "{}");
@@ -32,6 +35,10 @@ export default function DashboardPage() {
   }, [links, page]);
 
   const totalPages = Math.ceil(links.length / perPage);
+
+  const showToast = useCallback((message, type = "success") => {
+    setToast({ message, type, key: Date.now() });
+  }, []);
 
   async function fetchStats() {
     setStatsLoading(true);
@@ -80,8 +87,11 @@ export default function DashboardPage() {
       setForm({ originalUrl: "", title: "", slug: "" });
       setShowAdvanced(false);
       fetchStats();
+      showToast("Link created successfully! 🎉");
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Could not create link");
+      const msg = requestError.response?.data?.message || "Could not create link";
+      setError(msg);
+      showToast(msg, "error");
     } finally {
       setSaving(false);
     }
@@ -92,8 +102,20 @@ export default function DashboardPage() {
       await api.delete(`/links/${linkId}`);
       setLinks((current) => current.filter((l) => l.id !== linkId));
       fetchStats();
+      showToast("Link deleted successfully");
     } catch {
-      // silently fail
+      showToast("Failed to delete link", "error");
+    }
+  }
+
+  async function copyToClipboard(text, linkId) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(linkId);
+      showToast("Copied to clipboard! 📋");
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      showToast("Failed to copy", "error");
     }
   }
 
@@ -108,32 +130,54 @@ export default function DashboardPage() {
 
   return (
     <section className="space-y-6 animate-slideUp">
+      {/* Toast */}
+      {toast && (
+        <Toast
+          key={toast.key}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* Welcome Header */}
       <div>
-        <h1 className="page-title">Welcome back, {userName}!</h1>
+        <h1 className="page-title">Welcome back, {userName}! 👋</h1>
         <p className="page-subtitle">
-          You have {links.length} active links tracking {totalClicks.toLocaleString()} clicks this month.
+          You have <span className="font-semibold text-primary-600">{links.length}</span> active links tracking <span className="font-semibold text-primary-600">{totalClicks.toLocaleString()}</span> clicks.
         </p>
       </div>
 
       {/* Shorten URL Bar */}
       <div className="card p-5">
-        <p className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">Shorten a new link</p>
+        <p className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">✨ Shorten a new link</p>
         <form onSubmit={createLink} className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <Link2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 className="input-field pl-10"
-                placeholder="https://very-long-and-complex-url-to-shrink.com/analytics/path"
+                placeholder="Paste your long URL here... (e.g. https://example.com/very-long-path)"
                 value={form.originalUrl}
                 onChange={(e) => setForm({ ...form, originalUrl: e.target.value })}
                 required
+                type="url"
               />
             </div>
-            <button className="btn-primary whitespace-nowrap" disabled={saving} type="submit">
+            <button
+              className="btn-primary whitespace-nowrap"
+              disabled={saving || !form.originalUrl.trim()}
+              type="submit"
+            >
               <Link2 size={16} />
-              {saving ? "Shrinking..." : "Shrink"}
+              {saving ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Shrinking...
+                </>
+              ) : (
+                "Shrink It!"
+              )}
             </button>
           </div>
 
@@ -172,8 +216,8 @@ export default function DashboardPage() {
           )}
         </form>
         {error && (
-          <div className="mt-3 rounded-lg border border-danger-200 bg-danger-50 px-4 py-2.5 text-sm text-danger-600">
-            {error}
+          <div className="mt-3 rounded-lg border border-danger-200 bg-danger-50 px-4 py-2.5 text-sm text-danger-600 flex items-center gap-2">
+            <span>⚠️</span> {error}
           </div>
         )}
       </div>
@@ -190,7 +234,7 @@ export default function DashboardPage() {
         <StatCard
           label="Active Links"
           value={stats.activeLinks}
-          subtitle={`${Math.min(stats.activeLinks * 2, 100)}% of monthly limit used`}
+          subtitle={`${Math.min(stats.activeLinks * 2, 100)}% of capacity`}
           icon={Link2}
           loading={statsLoading}
         />
@@ -208,48 +252,59 @@ export default function DashboardPage() {
       {/* My Links Table */}
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">My Links</h2>
-          <Link className="text-sm font-medium text-primary-600 hover:text-primary-700" to="/links">
-            View all →
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900">My Links</h2>
+            <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+              {links.length}
+            </span>
+          </div>
+          <Link className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1" to="/links">
+            View all <ExternalLink size={13} />
           </Link>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px] text-left">
             <thead>
-              <tr className="border-b border-gray-100">
+              <tr className="border-b border-gray-100 bg-gray-50/60">
                 <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Original URL</th>
                 <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Short URL</th>
                 <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Clicks</th>
-                <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Created Date</th>
+                <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Created</th>
                 <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td className="px-6 py-8 text-center text-gray-400" colSpan="5">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                      Loading links...
-                    </div>
-                  </td>
-                </tr>
+                Array.from({ length: 3 }).map((_, i) => (
+                  <tr key={i} className="border-b border-gray-50 animate-pulse">
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-36" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-28" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-12" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-20" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-20" /></td>
+                  </tr>
+                ))
               ) : paginatedLinks.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-8 text-center text-gray-400" colSpan="5">
-                    No links yet. Create your first short link above.
+                  <td className="px-6 py-12 text-center text-gray-400" colSpan="5">
+                    <div className="flex flex-col items-center gap-2">
+                      <Link2 size={32} className="text-gray-300" />
+                      <p className="font-medium">No links yet</p>
+                      <p className="text-xs">Create your first short link above to get started!</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 paginatedLinks.map((link) => {
                   const shortUrl = `${backendOrigin}/${link.slug}`;
+                  const isCopied = copiedId === link.id;
                   return (
-                    <tr key={link.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <tr key={link.id} className="border-b border-gray-50 hover:bg-blue-50/30 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="max-w-[200px]">
-                          <p className="text-sm font-medium text-gray-900 truncate">{link.originalUrl}</p>
-                          <p className="text-xs text-gray-400 truncate">{link.title || "Untitled"}</p>
+                        <div className="max-w-[220px]">
+                          <p className="text-sm font-medium text-gray-900 truncate">{link.title || link.originalUrl}</p>
+                          <p className="text-xs text-gray-400 truncate">{link.originalUrl}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -264,19 +319,25 @@ export default function DashboardPage() {
                           </a>
                           <button
                             type="button"
-                            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-                            onClick={() => navigator.clipboard.writeText(shortUrl)}
-                            title="Copy URL"
+                            className={`rounded-md p-1.5 transition-all duration-200 ${
+                              isCopied
+                                ? "bg-green-100 text-green-600"
+                                : "text-gray-400 hover:bg-primary-50 hover:text-primary-600"
+                            }`}
+                            onClick={() => copyToClipboard(shortUrl, link.id)}
+                            title="Copy Short URL"
                           >
-                            <Copy size={13} />
+                            {isCopied ? <Check size={13} /> : <Copy size={13} />}
                           </button>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-semibold text-warning-600">{(link._count?.clicks || 0).toLocaleString()}</span>
-                        {(link._count?.clicks || 0) === 0 && (
-                          <p className="text-[10px] text-gray-400 mt-0.5 leading-none">Waiting for first click...</p>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-gray-900">{(link._count?.clicks || 0).toLocaleString()}</span>
+                          {(link._count?.clicks || 0) === 0 && (
+                            <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">new</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {formatDate(link.createdAt)}
@@ -286,23 +347,15 @@ export default function DashboardPage() {
                           <Link
                             to={`/analytics/${link.id}`}
                             className="rounded-lg p-2 text-gray-400 hover:bg-primary-50 hover:text-primary-600 transition"
-                            title="Analytics"
+                            title="View Analytics"
                           >
                             <BarChart3 size={16} />
                           </Link>
                           <button
                             type="button"
-                            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-                            onClick={() => navigator.clipboard.writeText(shortUrl)}
-                            title="Copy URL"
-                          >
-                            <Copy size={16} />
-                          </button>
-                          <button
-                            type="button"
                             className="rounded-lg p-2 text-gray-400 hover:bg-danger-50 hover:text-danger-500 transition"
                             onClick={() => deleteLink(link.id)}
-                            title="Delete"
+                            title="Delete Link"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -317,10 +370,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Pagination */}
-        {links.length > 0 && (
+        {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100">
             <p className="text-sm text-gray-500">
-              Showing {Math.min(paginatedLinks.length, perPage)} of {links.length} links
+              Page {page} of {totalPages} · {links.length} links total
             </p>
             <div className="flex items-center gap-2">
               <button

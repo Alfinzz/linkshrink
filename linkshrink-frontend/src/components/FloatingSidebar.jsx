@@ -1,5 +1,6 @@
-import { BarChart3, Gauge, Link2, LogOut, Plus, Settings, HelpCircle } from "lucide-react";
+import { BarChart3, Gauge, Link2, LogOut, Plus, Settings, HelpCircle, Menu, X } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: Gauge },
@@ -10,6 +11,7 @@ const navItems = [
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   function logout() {
     localStorage.removeItem("linkshrink_token");
@@ -17,11 +19,11 @@ export default function Sidebar() {
     navigate("/login", { replace: true });
   }
 
-  return (
-    <aside className="fixed top-0 left-0 z-30 flex h-screen w-60 flex-col border-r border-gray-200 bg-white">
+  const sidebarContent = (
+    <>
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 pt-5 pb-2">
-        <div className="w-9 h-9 rounded-lg bg-primary-600 flex items-center justify-center">
+        <div className="w-9 h-9 rounded-lg bg-primary-600 flex items-center justify-center shadow-md">
           <Link2 size={18} className="text-white" />
         </div>
         <div>
@@ -34,7 +36,10 @@ export default function Sidebar() {
       <div className="px-4 mt-4 mb-2">
         <button
           type="button"
-          onClick={() => navigate("/")}
+          onClick={() => {
+            navigate("/");
+            setMobileOpen(false);
+          }}
           className="btn-primary w-full py-2.5 text-sm"
         >
           <Plus size={16} />
@@ -51,6 +56,7 @@ export default function Sidebar() {
               key={item.to}
               to={item.to}
               end={item.to === "/"}
+              onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
                 [
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150",
@@ -85,6 +91,41 @@ export default function Sidebar() {
           Logout
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger */}
+      <button
+        type="button"
+        className="lg:hidden fixed top-3 left-3 z-50 rounded-lg p-2 bg-white border border-gray-200 shadow-sm text-gray-600 hover:bg-gray-50 transition"
+        onClick={() => setMobileOpen(!mobileOpen)}
+      >
+        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-30 bg-black/30 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar */}
+      <aside
+        className={`lg:hidden fixed top-0 left-0 z-40 flex h-screen w-60 flex-col border-r border-gray-200 bg-white transition-transform duration-300 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex fixed top-0 left-0 z-30 h-screen w-60 flex-col border-r border-gray-200 bg-white">
+        {sidebarContent}
+      </aside>
+    </>
   );
 }

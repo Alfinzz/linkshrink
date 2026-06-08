@@ -1,13 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Copy, BarChart3, Pencil, Trash2, Search, Download } from "lucide-react";
+import { Copy, BarChart3, Trash2, Search, Download, Link2, Check, ExternalLink } from "lucide-react";
 import api, { getBackendOrigin } from "../lib/axios";
+import Toast from "../components/Toast.jsx";
 
 export default function LinksPage() {
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [toast, setToast] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
   const backendOrigin = getBackendOrigin();
+
+  const showToast = useCallback((message, type = "success") => {
+    setToast({ message, type, key: Date.now() });
+  }, []);
 
   useEffect(() => {
     async function fetchLinks() {
@@ -23,9 +30,43 @@ export default function LinksPage() {
     try {
       await api.delete(`/links/${linkId}`);
       setLinks((current) => current.filter((l) => l.id !== linkId));
+      showToast("Link deleted successfully");
     } catch {
-      // silently fail
+      showToast("Failed to delete link", "error");
     }
+  }
+
+  async function copyToClipboard(text, linkId) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(linkId);
+      showToast("Copied to clipboard! 📋");
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      showToast("Failed to copy", "error");
+    }
+  }
+
+  function exportCSV() {
+    if (links.length === 0) {
+      showToast("No links to export", "info");
+      return;
+    }
+    const headers = "Title,Short URL,Original URL,Clicks,Status,Created\n";
+    const rows = links
+      .map((link) => {
+        const shortUrl = `${backendOrigin}/${link.slug}`;
+        return `"${link.title || 'Untitled'}","${shortUrl}","${link.originalUrl}",${link._count?.clicks || 0},${link.isArchived ? "Archived" : "Live"},"${new Date(link.createdAt).toLocaleDateString()}"`;
+      })
+      .join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "linkshrink_export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("CSV exported successfully! 📁");
   }
 
   const filteredLinks = links.filter((link) => {
@@ -49,13 +90,29 @@ export default function LinksPage() {
 
   return (
     <section className="space-y-6 animate-slideUp">
+      {/* Toast */}
+      {toast && (
+        <Toast
+          key={toast.key}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="page-title">My Links</h1>
-          <p className="page-subtitle">{links.length} links total</p>
+          <p className="page-subtitle">
+            <span className="font-semibold text-primary-600">{links.length}</span> links total
+          </p>
         </div>
-        <button type="button" className="btn-secondary">
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={exportCSV}
+        >
           <Download size={16} />
           Export CSV
         </button>
@@ -78,7 +135,7 @@ export default function LinksPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/50">
+              <tr className="border-b border-gray-100 bg-gray-50/60">
                 <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Title</th>
                 <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Short URL</th>
                 <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Original URL</th>
@@ -90,25 +147,33 @@ export default function LinksPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td className="px-6 py-8 text-center text-gray-400" colSpan="7">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                      Loading...
-                    </div>
-                  </td>
-                </tr>
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="border-b border-gray-50 animate-pulse">
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-24" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-32" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-40" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-10" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-14" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-20" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-20" /></td>
+                  </tr>
+                ))
               ) : filteredLinks.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-8 text-center text-gray-400" colSpan="7">
-                    {search ? "No links match your search." : "No links yet."}
+                  <td className="px-6 py-12 text-center text-gray-400" colSpan="7">
+                    <div className="flex flex-col items-center gap-2">
+                      <Link2 size={32} className="text-gray-300" />
+                      <p className="font-medium">{search ? "No links match your search" : "No links yet"}</p>
+                      <p className="text-xs">{search ? "Try adjusting your search terms" : "Go to Dashboard to create your first link"}</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 filteredLinks.map((link) => {
                   const shortUrl = `${backendOrigin}/${link.slug}`;
+                  const isCopied = copiedId === link.id;
                   return (
-                    <tr key={link.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <tr key={link.id} className="border-b border-gray-50 hover:bg-blue-50/30 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">{link.title || "Untitled"}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -122,20 +187,26 @@ export default function LinksPage() {
                           </a>
                           <button
                             type="button"
-                            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-                            onClick={() => navigator.clipboard.writeText(shortUrl)}
-                            title="Copy URL"
+                            className={`rounded-md p-1.5 transition-all duration-200 ${
+                              isCopied
+                                ? "bg-green-100 text-green-600"
+                                : "text-gray-400 hover:bg-primary-50 hover:text-primary-600"
+                            }`}
+                            onClick={() => copyToClipboard(shortUrl, link.id)}
+                            title="Copy Short URL"
                           >
-                            <Copy size={13} />
+                            {isCopied ? <Check size={13} /> : <Copy size={13} />}
                           </button>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-[200px] truncate">{link.originalUrl}</td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-semibold text-gray-900">{(link._count?.clicks || 0).toLocaleString()}</span>
-                        {(link._count?.clicks || 0) === 0 && (
-                          <p className="text-[10px] text-gray-400 mt-0.5 leading-none">Waiting for first click...</p>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-gray-900">{(link._count?.clicks || 0).toLocaleString()}</span>
+                          {(link._count?.clicks || 0) === 0 && (
+                            <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">new</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         {link.isArchived ? (
@@ -157,10 +228,10 @@ export default function LinksPage() {
                           <button
                             type="button"
                             className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-                            onClick={() => navigator.clipboard.writeText(shortUrl)}
+                            onClick={() => copyToClipboard(shortUrl, link.id)}
                             title="Copy"
                           >
-                            <Copy size={16} />
+                            {isCopied ? <Check size={16} /> : <Copy size={16} />}
                           </button>
                           <button
                             type="button"
