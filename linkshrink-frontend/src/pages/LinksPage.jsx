@@ -110,7 +110,16 @@ export default function LinksPage() {
                   return (
                     <tr key={link.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">{link.title || "Untitled"}</td>
-                      <td className="px-6 py-4 text-sm font-medium text-primary-600">{shortUrl.replace(/^https?:\/\//, '')}</td>
+                      <td className="px-6 py-4">
+                        <a
+                          href={shortUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline transition-colors"
+                        >
+                          {shortUrl.replace(/^https?:\/\//, '')}
+                        </a>
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-[200px] truncate">{link.originalUrl}</td>
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">{(link._count?.clicks || 0).toLocaleString()}</td>
                       <td className="px-6 py-4">

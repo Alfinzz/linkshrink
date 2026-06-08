@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Link2, Copy, MousePointerClick, MapPin, Pencil, Trash2, BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
+import { Link2, Copy, MousePointerClick, MapPin, Pencil, Trash2, BarChart3, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import api, { getBackendOrigin } from "../lib/axios";
 import StatCard from "../components/StatCard.jsx";
 
@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const perPage = 3;
 
   // Get real user name from localStorage
@@ -62,6 +63,7 @@ export default function DashboardPage() {
       const { data } = await api.post("/links", payload);
       setLinks((current) => [data.link, ...current]);
       setForm({ originalUrl: "", title: "", slug: "" });
+      setShowAdvanced(false);
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Could not create link");
     } finally {
@@ -100,21 +102,57 @@ export default function DashboardPage() {
       {/* Shorten URL Bar */}
       <div className="card p-5">
         <p className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">Shorten a new link</p>
-        <form onSubmit={createLink} className="flex items-center gap-3">
-          <div className="relative flex-1">
-            <Link2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              className="input-field pl-10"
-              placeholder="https://very-long-and-complex-url-to-shrink.com/analytics/path"
-              value={form.originalUrl}
-              onChange={(e) => setForm({ ...form, originalUrl: e.target.value })}
-              required
-            />
+        <form onSubmit={createLink} className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Link2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                className="input-field pl-10"
+                placeholder="https://very-long-and-complex-url-to-shrink.com/analytics/path"
+                value={form.originalUrl}
+                onChange={(e) => setForm({ ...form, originalUrl: e.target.value })}
+                required
+              />
+            </div>
+            <button className="btn-primary whitespace-nowrap" disabled={saving} type="submit">
+              <Link2 size={16} />
+              {saving ? "Shrinking..." : "Shrink"}
+            </button>
           </div>
-          <button className="btn-primary whitespace-nowrap" disabled={saving} type="submit">
-            <Link2 size={16} />
-            {saving ? "Shrinking..." : "Shrink"}
-          </button>
+
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="text-xs font-semibold text-gray-500 hover:text-primary-600 flex items-center gap-1 transition-colors"
+            >
+              {showAdvanced ? "Hide Advanced Options" : "Show Advanced Options"}
+              <ChevronDown size={14} className={`transition-transform duration-200 ${showAdvanced ? "rotate-180" : ""}`} />
+            </button>
+          </div>
+
+          {showAdvanced && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100 animate-slideUp">
+              <div>
+                <label className="label-text">Title / Alias (Optional)</label>
+                <input
+                  className="input-field"
+                  placeholder="e.g. My Personal Portfolio"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label-text">Custom Slug (Optional)</label>
+                <input
+                  className="input-field"
+                  placeholder="e.g. portfolio"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
         </form>
         {error && (
           <div className="mt-3 rounded-lg border border-danger-200 bg-danger-50 px-4 py-2.5 text-sm text-danger-600">
@@ -195,7 +233,14 @@ export default function DashboardPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-medium text-primary-600">{shortUrl.replace(/^https?:\/\//, '')}</span>
+                        <a
+                          href={shortUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline transition-colors"
+                        >
+                          {shortUrl.replace(/^https?:\/\//, '')}
+                        </a>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-semibold text-warning-600">{(link._count?.clicks || 0).toLocaleString()}</span>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Link2, ArrowRight, BarChart3, Shield } from "lucide-react";
+import { Link2, ArrowRight, BarChart3, Shield, User, Mail, Lock } from "lucide-react";
 import api from "../lib/axios";
 
 export default function RegisterPage() {
@@ -80,57 +80,69 @@ export default function RegisterPage() {
               {/* Full Name */}
               <div>
                 <label htmlFor="register-name" className="label-text">Full Name</label>
-                <input
-                  id="register-name"
-                  className="input-field"
-                  placeholder="John Doe"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                />
+                <div className="relative">
+                  <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="register-name"
+                    className="input-field pl-10"
+                    placeholder="John Doe"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
 
               {/* Email */}
               <div>
                 <label htmlFor="register-email" className="label-text">Email Address</label>
-                <input
-                  id="register-email"
-                  className="input-field"
-                  placeholder="john@example.com"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  required
-                />
+                <div className="relative">
+                  <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="register-email"
+                    className="input-field pl-10"
+                    placeholder="john@example.com"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
 
               {/* Password row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="register-password" className="label-text">Password</label>
-                  <input
-                    id="register-password"
-                    className="input-field"
-                    placeholder="••••••••"
-                    type="password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    required
-                    minLength={8}
-                  />
+                  <div className="relative">
+                    <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      id="register-password"
+                      className="input-field pl-10"
+                      placeholder="••••••••"
+                      type="password"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      required
+                      minLength={8}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label htmlFor="register-confirm-password" className="label-text">Confirm Password</label>
-                  <input
-                    id="register-confirm-password"
-                    className="input-field"
-                    placeholder="••••••••"
-                    type="password"
-                    value={form.confirmPassword}
-                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                    required
-                    minLength={8}
-                  />
+                  <div className="relative">
+                    <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      id="register-confirm-password"
+                      className="input-field pl-10"
+                      placeholder="••••••••"
+                      type="password"
+                      value={form.confirmPassword}
+                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                      required
+                      minLength={8}
+                    />
+                  </div>
                 </div>
               </div>
 
