@@ -1,4 +1,19 @@
-export default function StatCard({ label, value, subtitle, icon: Icon, iconColor = "text-primary-600", iconBg = "bg-primary-50" }) {
+export default function StatCard({ label, value, subtitle, icon: Icon, iconColor = "text-primary-600", iconBg = "bg-primary-50", loading = false }) {
+  if (loading) {
+    return (
+      <div className="card p-5 animate-pulse">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2.5 flex-1">
+            <div className="h-4 bg-gray-200 rounded w-24" />
+            <div className="h-8 bg-gray-200 rounded w-16" />
+            <div className="h-3 bg-gray-200 rounded w-32" />
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-gray-200" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="card p-5">
       <div className="flex items-start justify-between">

@@ -111,17 +111,32 @@ export default function LinksPage() {
                     <tr key={link.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">{link.title || "Untitled"}</td>
                       <td className="px-6 py-4">
-                        <a
-                          href={shortUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline transition-colors"
-                        >
-                          {shortUrl.replace(/^https?:\/\//, '')}
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={shortUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline transition-colors truncate max-w-[180px]"
+                          >
+                            {shortUrl.replace(/^https?:\/\//, '')}
+                          </a>
+                          <button
+                            type="button"
+                            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                            onClick={() => navigator.clipboard.writeText(shortUrl)}
+                            title="Copy URL"
+                          >
+                            <Copy size={13} />
+                          </button>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-[200px] truncate">{link.originalUrl}</td>
-                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">{(link._count?.clicks || 0).toLocaleString()}</td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-semibold text-gray-900">{(link._count?.clicks || 0).toLocaleString()}</span>
+                        {(link._count?.clicks || 0) === 0 && (
+                          <p className="text-[10px] text-gray-400 mt-0.5 leading-none">Waiting for first click...</p>
+                        )}
+                      </td>
                       <td className="px-6 py-4">
                         {link.isArchived ? (
                           <span className="badge-danger">Archived</span>

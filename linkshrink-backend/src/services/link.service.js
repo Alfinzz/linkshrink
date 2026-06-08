@@ -122,8 +122,76 @@ async function deleteLink(userId, id) {
   await prisma.link.delete({ where: { id } });
 }
 
+const ipCache = new Map();
+
+async function lookupIp(ip) {
+  if (!ip || ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168.") || ip.startsWith("10.")) {
+    return "Localhost";
+  }
+  if (ipCache.has(ip)) {
+    return ipCache.get(ip);
+  }
+  
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), 1000);
+
+  try {
+    const response = await fetch(`https://freeipapi.com/api/json/${ip}`, { signal: controller.signal });
+    clearTimeout(id);
+    if (response.ok) {
+      const data = await response.json();
+      const country = data.countryName || "Unknown";
+      ipCache.set(ip, country);
+      return country;
+    }
+  } catch (err) {
+    clearTimeout(id);
+  }
+  return "Unknown";
+}
+
+function parseReferrer(referrer) {
+  if (!referrer) return "Direct";
+  try {
+    const url = new URL(referrer);
+    let host = url.hostname.replace(/^www\./, "");
+    if (host.includes("facebook.com")) return "Facebook";
+    if (host.includes("twitter.com") || host.includes("t.co") || host.includes("x.com")) return "Twitter / X";
+    if (host.includes("linkedin.com")) return "LinkedIn";
+    if (host.includes("github.com")) return "GitHub";
+    if (host.includes("google.com")) return "Google Search";
+    return host;
+  } catch (_) {
+    return "Direct";
+  }
+}
+
+function parseUserAgent(userAgent) {
+  if (!userAgent) return { browser: "Other", device: "Desktop" };
+  
+  let device = "Desktop";
+  if (/ipad|tablet/i.test(userAgent)) {
+    device = "Tablet";
+  } else if (/mobi|android|iphone|ipod/i.test(userAgent)) {
+    device = "Mobile";
+  }
+
+  let browser = "Other";
+  if (/edg/i.test(userAgent)) {
+    browser = "Edge";
+  } else if (/chrome|crios/i.test(userAgent)) {
+    browser = "Chrome";
+  } else if (/safari/i.test(userAgent)) {
+    browser = "Safari";
+  } else if (/firefox|fxios/i.test(userAgent)) {
+    browser = "Firefox";
+  }
+
+  return { browser, device };
+}
+
 async function getAnalytics(userId, id) {
-  await getOwnedLink(userId, id);
+  const link = await getOwnedLink(userId, id);
 
   const clicks = await prisma.click.findMany({
     where: { linkId: id },
@@ -143,12 +211,123 @@ async function getAnalytics(userId, id) {
     return acc;
   }, {});
 
+  // Resolve countries for unique IPs
+  const uniqueIps = [...new Set(clicks.map(c => c.ip).filter(Boolean))];
+  const ipToCountryPairs = await Promise.all(
+    uniqueIps.map(async (ip) => {
+      const country = await lookupIp(ip);
+      return { ip, country };
+    })
+  );
+  const ipToCountryMap = new Map(ipToCountryPairs.map(p => [p.ip, p.country]));
+
+  // Group locations
+  const locationCounts = {};
+  clicks.forEach(click => {
+    const country = ipToCountryMap.get(click.ip) || "Localhost";
+    locationCounts[country] = (locationCounts[country] || 0) + 1;
+  });
+  const locations = Object.entries(locationCounts)
+    .map(([location, clicksCount]) => ({ location, clicks: clicksCount }))
+    .sort((a, b) => b.clicks - a.clicks);
+
+  // Group referrers
+  const referrerCounts = {};
+  clicks.forEach(click => {
+    const ref = parseReferrer(click.referrer);
+    referrerCounts[ref] = (referrerCounts[ref] || 0) + 1;
+  });
+  const referrers = Object.entries(referrerCounts)
+    .map(([referrer, clicksCount]) => ({ referrer, clicks: clicksCount }))
+    .sort((a, b) => b.clicks - a.clicks);
+
+  // Group devices & browsers
+  const deviceCounts = {};
+  const browserCounts = {};
+  clicks.forEach(click => {
+    const { device, browser } = parseUserAgent(click.userAgent);
+    deviceCounts[device] = (deviceCounts[device] || 0) + 1;
+    browserCounts[browser] = (browserCounts[browser] || 0) + 1;
+  });
+  const devices = Object.entries(deviceCounts)
+    .map(([device, clicksCount]) => ({ device, clicks: clicksCount }))
+    .sort((a, b) => b.clicks - a.clicks);
+  const browsers = Object.entries(browserCounts)
+    .map(([browser, clicksCount]) => ({ browser, clicks: clicksCount }))
+    .sort((a, b) => b.clicks - a.clicks);
+
   return {
     totalClicks: clicks.length,
+    uniqueVisitors: uniqueIps.length,
     byDay: Object.entries(byDay)
       .map(([date, total]) => ({ date, total }))
       .sort((a, b) => a.date.localeCompare(b.date)),
-    recentClicks: clicks.slice(0, 25)
+    recentClicks: clicks.slice(0, 25),
+    locations,
+    referrers,
+    devices,
+    browsers,
+    link
+  };
+}
+
+async function getDashboardStats(userId) {
+  const links = await prisma.link.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      slug: true,
+      isArchived: true,
+      clicks: {
+        select: {
+          ip: true,
+          referrer: true
+        }
+      }
+    }
+  });
+
+  let totalClicks = 0;
+  const locationCounts = {};
+  const referrerCounts = {};
+
+  const allClicks = [];
+  links.forEach(link => {
+    link.clicks.forEach(click => {
+      allClicks.push(click);
+      totalClicks++;
+    });
+  });
+
+  const uniqueIps = [...new Set(allClicks.map(c => c.ip).filter(Boolean))];
+  const ipToCountryPairs = await Promise.all(
+    uniqueIps.map(async (ip) => {
+      const country = await lookupIp(ip);
+      return { ip, country };
+    })
+  );
+  const ipToCountryMap = new Map(ipToCountryPairs.map(p => [p.ip, p.country]));
+
+  allClicks.forEach(click => {
+    const country = ipToCountryMap.get(click.ip) || "Localhost";
+    locationCounts[country] = (locationCounts[country] || 0) + 1;
+
+    const ref = parseReferrer(click.referrer);
+    referrerCounts[ref] = (referrerCounts[ref] || 0) + 1;
+  });
+
+  const sortedLocations = Object.entries(locationCounts)
+    .sort((a, b) => b[1] - a[1]);
+  const topLocation = sortedLocations[0] ? sortedLocations[0][0] : "No traffic yet";
+  const topLocationPercent = sortedLocations[0] && totalClicks > 0 
+    ? Math.round((sortedLocations[0][1] / totalClicks) * 100) 
+    : 0;
+
+  return {
+    totalClicks,
+    activeLinks: links.filter(l => !l.isArchived).length,
+    topLocation: topLocation !== "No traffic yet" ? `${topLocation} (${topLocationPercent}%)` : "No traffic yet",
+    topLocationRaw: topLocation
   };
 }
 
@@ -184,6 +363,7 @@ module.exports = {
   updateLink,
   deleteLink,
   getAnalytics,
+  getDashboardStats,
   getRedirectTarget,
   logClick
 };

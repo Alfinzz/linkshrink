@@ -8,6 +8,7 @@ router.use(requireAuth);
 
 router.get("/", linkController.listLinks);
 router.post("/", linkController.createLink);
+router.get("/stats", linkController.getDashboardStats);
 router.get("/:id", linkController.getLink);
 router.patch("/:id", linkController.updateLink);
 router.delete("/:id", linkController.deleteLink);

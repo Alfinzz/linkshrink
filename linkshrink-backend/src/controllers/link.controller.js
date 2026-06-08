@@ -54,11 +54,21 @@ async function getAnalytics(req, res, next) {
   }
 }
 
+async function getDashboardStats(req, res, next) {
+  try {
+    const stats = await linkService.getDashboardStats(req.user.id);
+    res.json({ stats });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   listLinks,
   createLink,
   getLink,
   updateLink,
   deleteLink,
-  getAnalytics
+  getAnalytics,
+  getDashboardStats
 };

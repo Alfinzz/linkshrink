@@ -12,6 +12,8 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [stats, setStats] = useState({ totalClicks: 0, activeLinks: 0, topLocation: "No traffic yet" });
+  const [statsLoading, setStatsLoading] = useState(true);
   const perPage = 3;
 
   // Get real user name from localStorage
@@ -31,6 +33,18 @@ export default function DashboardPage() {
 
   const totalPages = Math.ceil(links.length / perPage);
 
+  async function fetchStats() {
+    setStatsLoading(true);
+    try {
+      const { data } = await api.get("/links/stats");
+      setStats(data.stats);
+    } catch (err) {
+      console.error("Failed to load dashboard stats:", err);
+    } finally {
+      setStatsLoading(false);
+    }
+  }
+
   async function fetchLinks() {
     setError("");
     setLoading(true);
@@ -47,6 +61,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchLinks();
+    fetchStats();
   }, []);
 
   async function createLink(event) {
@@ -64,6 +79,7 @@ export default function DashboardPage() {
       setLinks((current) => [data.link, ...current]);
       setForm({ originalUrl: "", title: "", slug: "" });
       setShowAdvanced(false);
+      fetchStats();
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Could not create link");
     } finally {
@@ -75,6 +91,7 @@ export default function DashboardPage() {
     try {
       await api.delete(`/links/${linkId}`);
       setLinks((current) => current.filter((l) => l.id !== linkId));
+      fetchStats();
     } catch {
       // silently fail
     }
@@ -165,23 +182,26 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           label="Total Clicks"
-          value={totalClicks.toLocaleString()}
-          subtitle="↗ +12.5% this week"
+          value={stats.totalClicks.toLocaleString()}
+          subtitle="↗ Real-time tracking"
           icon={MousePointerClick}
+          loading={statsLoading}
         />
         <StatCard
           label="Active Links"
-          value={links.length}
-          subtitle={`${Math.min(links.length * 2, 100)}% of monthly limit used`}
+          value={stats.activeLinks}
+          subtitle={`${Math.min(stats.activeLinks * 2, 100)}% of monthly limit used`}
           icon={Link2}
+          loading={statsLoading}
         />
         <StatCard
           label="Top Location"
-          value="United States"
-          subtitle="📍 California (28%)"
+          value={stats.topLocationRaw || "No traffic yet"}
+          subtitle={stats.topLocation || "No traffic yet"}
           icon={MapPin}
           iconBg="bg-green-50"
           iconColor="text-green-600"
+          loading={statsLoading}
         />
       </div>
 
@@ -233,17 +253,30 @@ export default function DashboardPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <a
-                          href={shortUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline transition-colors"
-                        >
-                          {shortUrl.replace(/^https?:\/\//, '')}
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={shortUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline transition-colors truncate max-w-[180px]"
+                          >
+                            {shortUrl.replace(/^https?:\/\//, '')}
+                          </a>
+                          <button
+                            type="button"
+                            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                            onClick={() => navigator.clipboard.writeText(shortUrl)}
+                            title="Copy URL"
+                          >
+                            <Copy size={13} />
+                          </button>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-semibold text-warning-600">{(link._count?.clicks || 0).toLocaleString()}</span>
+                        {(link._count?.clicks || 0) === 0 && (
+                          <p className="text-[10px] text-gray-400 mt-0.5 leading-none">Waiting for first click...</p>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {formatDate(link.createdAt)}
