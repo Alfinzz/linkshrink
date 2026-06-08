@@ -4,47 +4,71 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ["Orbitron", "sans-serif"],
-        body: ["Space Grotesk", "sans-serif"]
+        sans: ["Inter", "system-ui", "sans-serif"]
       },
       colors: {
-        void: "#050712",
-        orbit: "#0B1026",
-        nebula: "#151A3D",
-        plasma: "#FF38D1",
-        cyan: "#20F7FF",
-        ion: "#92FE9D",
-        starlight: "#EAF7FF",
-        comet: "#8EA4C8"
+        primary: {
+          50: "#EFF6FF",
+          100: "#DBEAFE",
+          200: "#BFDBFE",
+          300: "#93C5FD",
+          400: "#60A5FA",
+          500: "#3B82F6",
+          600: "#2563EB",
+          700: "#1D4ED8",
+          800: "#1E40AF",
+          900: "#1E3A8A"
+        },
+        gray: {
+          50: "#F9FAFB",
+          100: "#F3F4F6",
+          200: "#E5E7EB",
+          300: "#D1D5DB",
+          400: "#9CA3AF",
+          500: "#6B7280",
+          600: "#4B5563",
+          700: "#374151",
+          800: "#1F2937",
+          900: "#111827"
+        },
+        success: {
+          50: "#F0FDF4",
+          100: "#DCFCE7",
+          500: "#22C55E",
+          600: "#16A34A"
+        },
+        danger: {
+          50: "#FEF2F2",
+          100: "#FEE2E2",
+          500: "#EF4444",
+          600: "#DC2626"
+        },
+        warning: {
+          50: "#FFFBEB",
+          100: "#FEF3C7",
+          500: "#F59E0B",
+          600: "#D97706"
+        }
       },
       boxShadow: {
-        neon: "0 0 24px rgba(32, 247, 255, 0.45)",
-        magenta: "0 0 30px rgba(255, 56, 209, 0.35)",
-        glass: "inset 0 1px 0 rgba(255,255,255,0.18), 0 24px 80px rgba(0,0,0,0.38)"
-      },
-      backgroundImage: {
-        "nebula-radial":
-          "radial-gradient(circle at 20% 20%, rgba(255,56,209,0.28), transparent 28%), radial-gradient(circle at 80% 0%, rgba(32,247,255,0.24), transparent 30%), radial-gradient(circle at 50% 80%, rgba(146,254,157,0.12), transparent 34%), linear-gradient(135deg, #050712 0%, #0B1026 46%, #151A3D 100%)",
-        "glass-shine":
-          "linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04))"
+        card: "0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06)",
+        "card-hover": "0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)",
+        sidebar: "2px 0 8px rgba(0, 0, 0, 0.06)",
+        input: "0 1px 2px rgba(0, 0, 0, 0.05)",
+        "btn-primary": "0 1px 3px rgba(37, 99, 235, 0.4), 0 1px 2px rgba(37, 99, 235, 0.3)"
       },
       animation: {
-        float: "float 7s ease-in-out infinite",
-        pulseGlow: "pulseGlow 3s ease-in-out infinite",
-        rise: "rise 650ms ease both"
+        fadeIn: "fadeIn 400ms ease both",
+        slideUp: "slideUp 500ms ease both"
       },
       keyframes: {
-        float: {
-          "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-14px)" }
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" }
         },
-        pulseGlow: {
-          "0%, 100%": { opacity: "0.55", filter: "blur(16px)" },
-          "50%": { opacity: "0.95", filter: "blur(24px)" }
-        },
-        rise: {
-          "0%": { opacity: "0", transform: "translateY(18px) scale(0.98)" },
-          "100%": { opacity: "1", transform: "translateY(0) scale(1)" }
+        slideUp: {
+          "0%": { opacity: "0", transform: "translateY(12px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" }
         }
       }
     }

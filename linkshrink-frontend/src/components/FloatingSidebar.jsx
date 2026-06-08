@@ -1,4 +1,4 @@
-import { BarChart3, Gauge, Link2, LogOut, Settings } from "lucide-react";
+import { BarChart3, Gauge, Link2, LogOut, Plus, Settings, HelpCircle } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 
 const navItems = [
@@ -8,7 +8,7 @@ const navItems = [
   { to: "/settings", label: "Settings", icon: Settings }
 ];
 
-export default function FloatingSidebar() {
+export default function Sidebar() {
   const navigate = useNavigate();
 
   function logout() {
@@ -17,30 +17,45 @@ export default function FloatingSidebar() {
   }
 
   return (
-    <aside className="glass-panel sticky top-4 z-10 flex h-fit w-full flex-col rounded-[2rem] p-4 md:w-72">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded-2xl border border-cyan/50 bg-cyan/15 text-xl font-black text-cyan shadow-neon">
-          LS
+    <aside className="fixed top-0 left-0 z-30 flex h-screen w-60 flex-col border-r border-gray-200 bg-white">
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 px-5 pt-5 pb-2">
+        <div className="w-9 h-9 rounded-lg bg-primary-600 flex items-center justify-center">
+          <Link2 size={18} className="text-white" />
         </div>
         <div>
-          <p className="font-display text-lg tracking-[0.22em] text-starlight">LINKSHRINK</p>
-          <p className="text-xs uppercase tracking-[0.34em] text-comet">anti-gravity links</p>
+          <p className="text-sm font-bold text-gray-900 leading-tight">LinkShrink</p>
+          <p className="text-[10px] text-gray-400 leading-tight">SaaS Platform</p>
         </div>
       </div>
 
-      <nav className="grid gap-2">
+      {/* Shrink URL Button */}
+      <div className="px-4 mt-4 mb-2">
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="btn-primary w-full py-2.5 text-sm"
+        >
+          <Plus size={16} />
+          Shrink URL
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 mt-2 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.to === "/"}
               className={({ isActive }) =>
                 [
-                  "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150",
                   isActive
-                    ? "border border-cyan/40 bg-cyan/15 text-cyan shadow-neon"
-                    : "text-comet hover:bg-white/[0.07] hover:text-starlight"
+                    ? "bg-primary-50 text-primary-700"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 ].join(" ")
               }
             >
@@ -51,14 +66,24 @@ export default function FloatingSidebar() {
         })}
       </nav>
 
-      <button
-        type="button"
-        onClick={logout}
-        className="mt-6 flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold text-plasma transition hover:bg-plasma/10"
-      >
-        <LogOut size={18} />
-        Logout
-      </button>
+      {/* Footer links */}
+      <div className="px-3 pb-5 space-y-1">
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900"
+        >
+          <HelpCircle size={18} />
+          Support
+        </button>
+        <button
+          type="button"
+          onClick={logout}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors duration-150 hover:bg-danger-50 hover:text-danger-600"
+        >
+          <LogOut size={18} />
+          Logout
+        </button>
+      </div>
     </aside>
   );
 }
