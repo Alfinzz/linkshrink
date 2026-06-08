@@ -9,9 +9,12 @@ const tabs = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
+
+  // Read real user data from localStorage
+  const storedUser = JSON.parse(localStorage.getItem("linkshrink_user") || "{}");
   const [profileForm, setProfileForm] = useState({
-    name: "John Doe",
-    email: "john@example.com"
+    name: storedUser.name || "",
+    email: storedUser.email || ""
   });
 
   return (

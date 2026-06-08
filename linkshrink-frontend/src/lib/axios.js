@@ -22,6 +22,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("linkshrink_token");
+      localStorage.removeItem("linkshrink_user");
     }
 
     return Promise.reject(error);

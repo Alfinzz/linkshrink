@@ -13,6 +13,10 @@ export default function DashboardPage() {
   const [page, setPage] = useState(1);
   const perPage = 3;
 
+  // Get real user name from localStorage
+  const storedUser = JSON.parse(localStorage.getItem("linkshrink_user") || "{}");
+  const userName = storedUser.name || storedUser.email?.split("@")[0] || "there";
+
   const backendOrigin = getBackendOrigin();
   const totalClicks = useMemo(
     () => links.reduce((sum, link) => sum + (link._count?.clicks || 0), 0),
@@ -87,7 +91,7 @@ export default function DashboardPage() {
     <section className="space-y-6 animate-slideUp">
       {/* Welcome Header */}
       <div>
-        <h1 className="page-title">Welcome back, Alex!</h1>
+        <h1 className="page-title">Welcome back, {userName}!</h1>
         <p className="page-subtitle">
           You have {links.length} active links tracking {totalClicks.toLocaleString()} clicks this month.
         </p>

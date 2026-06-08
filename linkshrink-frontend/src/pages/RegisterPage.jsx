@@ -30,6 +30,7 @@ export default function RegisterPage() {
         password: form.password
       });
       localStorage.setItem("linkshrink_token", data.token);
+      localStorage.setItem("linkshrink_user", JSON.stringify(data.user));
       navigate("/", { replace: true });
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Registration failed");

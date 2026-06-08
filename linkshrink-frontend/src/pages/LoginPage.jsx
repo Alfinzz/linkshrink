@@ -17,6 +17,7 @@ export default function LoginPage() {
     try {
       const { data } = await api.post("/auth/login", form);
       localStorage.setItem("linkshrink_token", data.token);
+      localStorage.setItem("linkshrink_user", JSON.stringify(data.user));
       navigate("/", { replace: true });
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Login failed");

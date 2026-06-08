@@ -13,6 +13,7 @@ export default function Sidebar() {
 
   function logout() {
     localStorage.removeItem("linkshrink_token");
+    localStorage.removeItem("linkshrink_user");
     navigate("/login", { replace: true });
   }
 
